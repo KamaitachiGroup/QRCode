@@ -33,4 +33,4 @@ runs:
             docker-compose stop
             git checkout master
             git pull origin master
-            docker-compose up --env-file=../.qrcode.env --build -d
+            docker-compose --env-file=../.qrcode.env up --build -d
