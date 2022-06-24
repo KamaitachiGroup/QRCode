@@ -5,14 +5,16 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
+    "start-dev": "ts-node app.ts",
     "build": "tsc"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "@tsconfig/node18": "^1.0.1",
-    "typescript": "^4.7.4",
-    "@types/node": "^18.0.0"
+    "@types/node": "^18.0.0",
+    "ts-node": "^10.8.1",
+    "typescript": "^4.7.4"
   },
   "dependencies": {
     "discord.js": "^13.8.1"
