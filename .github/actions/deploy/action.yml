@@ -24,10 +24,10 @@ runs:
       - name: Deploy Discord bot containers
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_DEPLOY_KEY }}
-          port: ${{ secrets.SSH_PORT }}
+          host: ${{ inputs.SSH_HOST }}
+          username: ${{ inputs.SSH_USERNAME }}
+          key: ${{ inputs.SSH_DEPLOY_KEY }}
+          port: ${{ inputs.SSH_PORT }}
           script: |
             cd ~/QRCode
             docker-compose stop
