@@ -4,6 +4,6 @@ services:
   backend:
     build: ./backend
     working_dir: /var/app
-    command: "npm ci && npm run build && npm run start"
     environment:
       - NODE_ENV=development
+      - DISCORD_TOKEN=${DISCORD_TOKEN}

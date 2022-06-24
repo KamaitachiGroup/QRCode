@@ -17,6 +17,9 @@ inputs:
   SSH_PASSWORD:
     description: SSH PASSWORD
     required: true
+  DISCORD_TOKEN:
+    description: DISCORD TOKEN
+    required: true
 
 runs:
     using: "composite"
@@ -33,4 +36,4 @@ runs:
             docker-compose stop
             git checkout master
             git pull origin master
-            docker-compose --env-file=../.qrcode.env up --build -d
+            DISCORD_TOKEN="${{ inputs.DISCORD_TOKEN }}" docker-compose up --build -d
