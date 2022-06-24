@@ -1,0 +1,19 @@
+name: Push On Master
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy-with-ssh:
+    name: Deploy with SSH
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/deploy
+        with:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USERNAME: ${{ secrets.SSH_USER }}
+          SSH_DEPLOY_KEY: ${{ secrets.SSH_DEPLOY_KEY }}

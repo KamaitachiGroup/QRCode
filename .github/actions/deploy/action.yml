@@ -1,0 +1,36 @@
+name: Deploy With SSH
+description: Deploy with SSH
+
+inputs:
+  SSH_HOST:
+    description: SSH Host
+    required: true
+  SSH_DEPLOY_KEY:
+    description: SSH DEPLOY KEY
+    required: true
+  SSH_USERNAME:
+    description: SSH USERNAME
+    required: true
+  SSH_PORT:
+    description: SSH PORT
+    required: true
+  SSH_PASSWORD:
+    description: SSH PASSWORD
+    required: true
+
+runs:
+    using: "composite"
+    steps:
+      - name: Deploy Discord bot containers
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_DEPLOY_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            cd ~/QRCode
+            docker-compose stop
+            git checkout master
+            git pull origin master
+            docker-compose up --build -d
