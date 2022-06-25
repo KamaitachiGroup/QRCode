@@ -17,9 +17,6 @@ inputs:
   SSH_PASSWORD:
     description: SSH PASSWORD
     required: true
-  DISCORD_TOKEN:
-    description: DISCORD TOKEN
-    required: true
 
 runs:
     using: "composite"
@@ -32,8 +29,11 @@ runs:
           key: ${{ inputs.SSH_DEPLOY_KEY }}
           port: ${{ inputs.SSH_PORT }}
           script: |
+            set -a
+            source ~/.env
+            set +a
             cd ~/QRCode
             docker-compose stop
             git checkout master
             git pull origin master
-            DISCORD_TOKEN="${{ inputs.DISCORD_TOKEN }}" docker-compose up --build -d
+            docker-compose up --build -d
