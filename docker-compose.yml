@@ -5,5 +5,27 @@ services:
     build: ./backend
     working_dir: /var/app
     environment:
-      - NODE_ENV=development
-      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      NODE_ENV: development
+      DISCORD_TOKEN: ${DISCORD_TOKEN}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-database}
+      DB_NAME: ${DB_NAME:-database}
+      DB_USER: ${DB_USER:-database}
+      DB_USER_PASSWORD: ${DB_USER_PASSWORD:-database}
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:9.6
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-database}
+      DB_NAME: ${DB_NAME:-database}
+      DB_USER: ${DB_USER:-database}
+      DB_USER_PASSWORD: ${DB_USER_PASSWORD:-database}
+    volumes:
+      - ./database/postgres-init-user-db.sh:/docker-entrypoint-initdb.d/init-user-db.sh
+      - ./database:/datamodel
+      - pg_data:/var/lib/postgresql/data
+    restart: always
+
+volumes:
+  pg_data:
