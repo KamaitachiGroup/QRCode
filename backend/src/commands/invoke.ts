@@ -1,6 +1,5 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { CacheType, CommandInteraction, Client, GuildVoiceChannelResolvable, BaseGuild, BaseGuildVoiceChannel } from 'discord.js';
-import { off } from 'process';
 import { Command } from '../core/commands/command';
 
 export class InvokeCommand extends Command {
@@ -54,7 +53,7 @@ export class InvokeCommand extends Command {
         await member.voice.setChannel(baseChannel);
         return;
       }
-      
+
       if (! member.voice.channel) {
         return;
       }
