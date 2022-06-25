@@ -4,6 +4,7 @@ import { Client, Intents } from 'discord.js';
 import { Postgres } from './src/services/postgres';
 import { CommandManager } from './src/core/commands/commandManager';
 import { InvokeCommand } from './src/commands/invoke';
+import { LoLPickerCommand } from './src/commands/lolpicker';
 
 const postgres = new Postgres(config.postgres as JSONObject);
 const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_VOICE_STATES] });
@@ -13,6 +14,7 @@ const commandManager = new CommandManager(client);
 client.once('ready', async () => {
 	await postgres.init();
 	commandManager.addCommand(new InvokeCommand());
+	commandManager.addCommand(new LoLPickerCommand())
 	await commandManager.registerCommands();
 	console.log('Ready!');
 });

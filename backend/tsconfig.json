@@ -1,7 +1,10 @@
 {
     "extends": "@tsconfig/node18/tsconfig.json",
     "compilerOptions": {
-        "allowJs": true
+        "allowJs": true,
+      "lib": [
+        "dom"
+      ]
     },
     "include": [
         "./backend/src/**/*.ts",
