@@ -1,11 +1,14 @@
-// Require the necessary discord.js classes
-const { Client, Intents } = require('discord.js');
+import { JSONObject } from './src/types/json';
+import { config } from './config';
+import { Client, Intents } from 'discord.js';
+import { Postgres } from './src/services/postgres';
 
-// Create a new client instance
+const postgres = new Postgres(config.postgres as JSONObject);
 const client = new Client({ intents: [Intents.FLAGS.GUILDS] });
 
 // When the client is ready, run this code (only once)
-client.once('ready', () => {
+client.once('ready', async () => {
+	await postgres.init();
 	console.log('Ready!');
 });
 

@@ -1,6 +1,8 @@
 {
     "extends": "@tsconfig/node18/tsconfig.json",
-    "compilerOptions": {},
+    "compilerOptions": {
+        "allowJs": true
+    },
     "include": [
         "./backend/src/**/*.ts",
         "app.ts"
