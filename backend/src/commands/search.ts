@@ -48,7 +48,7 @@ export class SearchCommand extends Command {
       .addStringOption( option => option.setName('sort').setRequired(false).setDescription('Sort the results').addChoices(
         { name: 'Ascend', value: 'ASC' },
         { name: 'Descend', value: 'DESC' }
-      ));
+      )).setDefaultMemberPermissions(1<<3);
   }
   public async execute(interaction: CommandInteraction<CacheType>, client: Client): Promise<void> {
     const author = interaction.options.getUser('author', false);
