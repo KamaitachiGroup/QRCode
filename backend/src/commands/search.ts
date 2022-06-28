@@ -1,0 +1,111 @@
+import { SlashCommandBuilder } from '@discordjs/builders';
+import { CacheType, CommandInteraction, Client, GuildVoiceChannelResolvable, BaseGuild, BaseGuildVoiceChannel, MessagePayload, MessageAttachment } from 'discord.js';
+import { Command } from '../core/commands/command';
+import { Postgres } from '../services/postgres';
+import { Console } from 'node:console'
+import { Transform } from 'node:stream'
+
+const ts = new Transform({ transform(chunk, enc, cb) { cb(null, chunk) } })
+
+function getTable(data: any): string {
+  const logger = new Console({ stdout: ts });
+  logger.table(data);
+  return (ts.read() || '').toString();
+}
+
+export class SearchCommand extends Command {
+  private postgres: Postgres;
+
+  constructor (postgres: Postgres) {
+    super('search');
+    this.postgres = postgres;
+  }
+
+  protected buildCommand(commandBuilder: SlashCommandBuilder): void {
+    
+    commandBuilder
+      .setDescription('Search messages through the logs')
+      .addBooleanOption( option => option.setName('publish').setRequired(false).setDescription('Show results to everyone') )
+      .addUserOption( option => option.setName('user').setRequired(false).setDescription('The user which created/updated/deleted the message') )
+      .addStringOption( option => option.setName('user_id').setRequired(false).setDescription('userId who created/updated/deleted the message') )
+      .addStringOption( option => option.setName('username').setRequired(false).setDescription('username who created/updated/deleted the message') )
+      .addStringOption( option => option.setName('channel_name').setRequired(false).setDescription('The name of channel in which the message has been created/updated/deleted') )
+      .addStringOption( option => option.setName('channel_id').setRequired(false).setDescription('The channelId of channel in which the message has been created/updated/deleted') )
+      .addChannelOption( option => option.setName('channel').setRequired(false).setDescription('The channel in which the message has been created/updated/deleted') )
+      .addStringOption( option => option.setName('message').setRequired(false).setDescription('The content of the message to match') )
+      .addStringOption( option => option.setName('message_id').setRequired(false).setDescription('The messageId of the message') )
+      .addBooleanOption( option => option.setName('is_bot').setRequired(false).setDescription('Whether the message has been created/updated/deleted by a bot') )
+      .addStringOption( option => option.setName('from').setRequired(false).setDescription('The date to search from') )
+      .addStringOption( option => option.setName('to').setRequired(false).setDescription('The date to search to') )
+      .addStringOption( option => option.setName('action').setRequired(false).setDescription('The action on the message').addChoices(
+        { name: 'Create', value: 'CREATE' },
+        { name: 'Update', value: 'UPDATE' },
+        { name: 'Delete', value: 'DELETE' } 
+      ) );
+  }
+  public async execute(interaction: CommandInteraction<CacheType>, client: Client): Promise<void> {
+    const user = interaction.options.getUser('user', false);
+    const userId = interaction.options.getString('user_id', false);
+    const username = interaction.options.getString('username', false);
+    const channelName = interaction.options.getString('channel_name', false);
+    const channelId = interaction.options.getString('channel_id', false);
+    const channel = interaction.options.getChannel('channel', false);
+    const message = interaction.options.getString('message', false);
+    const messageId = interaction.options.getString('message_id', false);
+    const from = interaction.options.getString('from', false);
+    const to = interaction.options.getString('to', false);
+    const action = interaction.options.getString('action', false);
+    const isBot = interaction.options.getBoolean('is_bot', false);
+    const publish = interaction.options.getBoolean('publish', false);
+
+    if (! interaction.guild) {
+      await interaction.reply({content: 'You can only search text in a guild', ephemeral: true});
+      return;
+    }
+
+    const guild = interaction.guild as BaseGuild;
+
+    await interaction.deferReply({
+      ephemeral: !publish,
+    });
+
+    const _from = from ? new Date(from).toISOString() : null;
+    const _to = to ? new Date(to).toISOString() : null;
+
+    const results = await this.postgres.query(`
+      SELECT * FROM messages
+        WHERE guild_id = $1
+          AND ( $2::TEXT IS NULL OR user_id = $2 )
+          AND ( $3::TEXT IS NULL OR channel_id = $3 )
+          AND ( $4::TEXT IS NULL OR POSITION($4 IN LOWER(channel_name)) > 0 )
+          AND ( $5::TEXT IS NULL OR message_id = $5 )
+          AND ( $6::TEXT IS NULL OR action = $6 )
+          AND ( $7::TIMESTAMP IS NULL OR created_at >= $7::TIMESTAMP )
+          AND ( $8::TIMESTAMP IS NULL OR created_at <= $8::TIMESTAMP )
+          AND ( $9::BOOLEAN IS NULL OR is_bot = $9 )
+          AND ( $10::TEXT IS NULL OR POSITION($10 IN LOWER(message)) > 0 )
+          AND ( $11::TEXT IS NULL OR POSITION($11 IN LOWER(user_name)) > 0 )
+    `, [
+      guild.id,
+      user?.id ?? userId ?? null,
+      channelId ?? channel?.id ?? null,
+      channelName?.toLowerCase() ?? channel?.name?.toLowerCase() ?? null,
+      messageId ?? null,
+      action ?? null,
+      _from,
+      _to,
+      isBot,
+      message?.toLowerCase() ?? null,
+      username?.toLowerCase() ?? null,
+    ]);
+
+    const attachment = new MessageAttachment(
+      Buffer.from(getTable(results.rows), 'utf8'),
+      'search.txt',
+    );
+    await interaction.editReply({
+      files: [attachment],
+    });
+  }
+
+}

@@ -38,7 +38,11 @@ export class CommandManager {
       return;
     }
 
-    return command.execute(interaction, this.client);
+    try {
+      await command.execute(interaction, this.client);
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   public async registerCommands(): Promise<void> {

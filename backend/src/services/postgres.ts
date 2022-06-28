@@ -19,14 +19,14 @@ export class Postgres {
     let retries = 0;
     const retryDelay = ms(this.config.retryDelay as string);
 
-    while (retries < this.config.maxRetries) {
+    while (retries < this.config.maxRetries!) {
       try {
         await this.connect();
         console.debug('Connected to Postgres');
         break;
       } catch (err) {
         retries++;
-        if (retries >= this.config.maxRetries) {
+        if (retries >= this.config.maxRetries!) {
           console.error('Could not connect to Postgres in time');
           throw err;
         } else {
