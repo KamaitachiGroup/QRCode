@@ -26,9 +26,12 @@ export class SearchCommand extends Command {
     commandBuilder
       .setDescription('Search messages through the logs')
       .addBooleanOption( option => option.setName('publish').setRequired(false).setDescription('Show results to everyone') )
-      .addUserOption( option => option.setName('user').setRequired(false).setDescription('The user which created/updated/deleted the message') )
-      .addStringOption( option => option.setName('user_id').setRequired(false).setDescription('userId who created/updated/deleted the message') )
-      .addStringOption( option => option.setName('username').setRequired(false).setDescription('username who created/updated/deleted the message') )
+      .addUserOption( option => option.setName('author').setRequired(false).setDescription('The user who authored the message') )
+      .addStringOption( option => option.setName('author_id').setRequired(false).setDescription('Id of the user who authored the message') )
+      .addStringOption( option => option.setName('author_name').setRequired(false).setDescription('username of the user who authored the message') )
+      .addUserOption( option => option.setName('actor').setRequired(false).setDescription('The user who acted on the message') )
+      .addStringOption( option => option.setName('actor_id').setRequired(false).setDescription('Id of the user who acted on the message') )
+      .addStringOption( option => option.setName('actor_name').setRequired(false).setDescription('username of the user who acted on the message') )
       .addStringOption( option => option.setName('channel_name').setRequired(false).setDescription('The name of channel in which the message has been created/updated/deleted') )
       .addStringOption( option => option.setName('channel_id').setRequired(false).setDescription('The channelId of channel in which the message has been created/updated/deleted') )
       .addChannelOption( option => option.setName('channel').setRequired(false).setDescription('The channel in which the message has been created/updated/deleted') )
@@ -41,12 +44,19 @@ export class SearchCommand extends Command {
         { name: 'Create', value: 'CREATE' },
         { name: 'Update', value: 'UPDATE' },
         { name: 'Delete', value: 'DELETE' } 
-      ) );
+      ))
+      .addStringOption( option => option.setName('sort').setRequired(false).setDescription('Sort the results').addChoices(
+        { name: 'Ascend', value: 'ASC' },
+        { name: 'Descend', value: 'DESC' }
+      ));
   }
   public async execute(interaction: CommandInteraction<CacheType>, client: Client): Promise<void> {
-    const user = interaction.options.getUser('user', false);
-    const userId = interaction.options.getString('user_id', false);
-    const username = interaction.options.getString('username', false);
+    const author = interaction.options.getUser('author', false);
+    const authorId = interaction.options.getString('author_id', false);
+    const authorname = interaction.options.getString('author_name', false);
+    const actor = interaction.options.getUser('actor', false);
+    const actorId = interaction.options.getString('actor_id', false);
+    const actorname = interaction.options.getString('actor_name', false);
     const channelName = interaction.options.getString('channel_name', false);
     const channelId = interaction.options.getString('channel_id', false);
     const channel = interaction.options.getChannel('channel', false);
@@ -57,6 +67,7 @@ export class SearchCommand extends Command {
     const action = interaction.options.getString('action', false);
     const isBot = interaction.options.getBoolean('is_bot', false);
     const publish = interaction.options.getBoolean('publish', false);
+    const sort = interaction.options.getString('sort', false);
 
     if (! interaction.guild) {
       await interaction.reply({content: 'You can only search text in a guild', ephemeral: true});
@@ -75,19 +86,22 @@ export class SearchCommand extends Command {
     const results = await this.postgres.query(`
       SELECT * FROM messages
         WHERE guild_id = $1
-          AND ( $2::TEXT IS NULL OR user_id = $2 )
+          AND ( $2::TEXT IS NULL OR author_id = $2 )
           AND ( $3::TEXT IS NULL OR channel_id = $3 )
           AND ( $4::TEXT IS NULL OR POSITION($4 IN LOWER(channel_name)) > 0 )
           AND ( $5::TEXT IS NULL OR message_id = $5 )
           AND ( $6::TEXT IS NULL OR action = $6 )
-          AND ( $7::TIMESTAMP IS NULL OR created_at >= $7::TIMESTAMP )
-          AND ( $8::TIMESTAMP IS NULL OR created_at <= $8::TIMESTAMP )
+          AND ( $7::TIMESTAMP IS NULL OR entry_date >= $7::TIMESTAMP )
+          AND ( $8::TIMESTAMP IS NULL OR entry_date <= $8::TIMESTAMP )
           AND ( $9::BOOLEAN IS NULL OR is_bot = $9 )
           AND ( $10::TEXT IS NULL OR POSITION($10 IN LOWER(message)) > 0 )
-          AND ( $11::TEXT IS NULL OR POSITION($11 IN LOWER(user_name)) > 0 )
+          AND ( $11::TEXT IS NULL OR POSITION($11 IN LOWER(author_name)) > 0 )
+          AND ( $12::TEXT IS NULL OR POSITION($12 IN LOWER(actor_name)) > 0 )
+          AND ( $13::TEXT IS NULL OR actor_id = $13 )
+          ORDER BY entry_date ${sort === 'ASC' ? 'ASC' : 'DESC'}
     `, [
       guild.id,
-      user?.id ?? userId ?? null,
+      author?.id ?? authorId ?? null,
       channelId ?? channel?.id ?? null,
       channelName?.toLowerCase() ?? channel?.name?.toLowerCase() ?? null,
       messageId ?? null,
@@ -96,7 +110,9 @@ export class SearchCommand extends Command {
       _to,
       isBot,
       message?.toLowerCase() ?? null,
-      username?.toLowerCase() ?? null,
+      authorname?.toLowerCase() ?? null,
+      actorname?.toLowerCase() ?? null,
+      actor?.id ?? actorId ?? null,
     ]);
 
     const attachment = new MessageAttachment(
