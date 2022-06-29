@@ -12,5 +12,6 @@ CREATE TABLE IF NOT EXISTS public.messages (
     is_bot BOOLEAN NOT NULL,
     actor_id text,
     actor_name text,
+    is_command BOOLEAN NOT NULL,
     entry_date timestamp NOT NULL DEFAULT now()
 );

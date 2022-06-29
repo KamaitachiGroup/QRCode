@@ -15,13 +15,15 @@ const client = new Client({ intents: [
 	Intents.FLAGS.GUILD_MESSAGES,
 	Intents.FLAGS.GUILD_MEMBERS,
 ] });
-const commandManager = new CommandManager(client);
+const commandManager = new CommandManager(client, postgres);
 const messageLogger = new MessageLogger(client, postgres);
 
 // When the client is ready, run this code (only once)
 client.once('ready', async () => {
 	await postgres.init();
 	await messageLogger.init();
+	await commandManager.init();
+	
 	commandManager.addCommand(new InvokeCommand());
 	commandManager.addCommand(new LoLPickerCommand());
 	commandManager.addCommand(new SearchCommand(postgres));

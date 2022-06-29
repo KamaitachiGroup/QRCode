@@ -37,7 +37,8 @@ export class SearchCommand extends Command {
       .addChannelOption( option => option.setName('channel').setRequired(false).setDescription('The channel in which the message has been created/updated/deleted') )
       .addStringOption( option => option.setName('message').setRequired(false).setDescription('The content of the message to match') )
       .addStringOption( option => option.setName('message_id').setRequired(false).setDescription('The messageId of the message') )
-      .addBooleanOption( option => option.setName('is_bot').setRequired(false).setDescription('Whether the message has been created/updated/deleted by a bot') )
+      .addBooleanOption( option => option.setName('is_bot').setRequired(false).setDescription('Whether the message has been authored by a bot') )
+      .addBooleanOption( option => option.setName('is_command').setRequired(false).setDescription('Whether the message is a command') )
       .addStringOption( option => option.setName('from').setRequired(false).setDescription('The date to search from') )
       .addStringOption( option => option.setName('to').setRequired(false).setDescription('The date to search to') )
       .addStringOption( option => option.setName('action').setRequired(false).setDescription('The action on the message').addChoices(
@@ -68,6 +69,7 @@ export class SearchCommand extends Command {
     const isBot = interaction.options.getBoolean('is_bot', false);
     const publish = interaction.options.getBoolean('publish', false);
     const sort = interaction.options.getString('sort', false);
+    const isCommand = interaction.options.getBoolean('is_command', false);
 
     if (! interaction.guild) {
       await interaction.reply({content: 'You can only search text in a guild', ephemeral: true});
@@ -93,11 +95,12 @@ export class SearchCommand extends Command {
           AND ( $6::TEXT IS NULL OR action = $6 )
           AND ( $7::TIMESTAMP IS NULL OR entry_date >= $7::TIMESTAMP )
           AND ( $8::TIMESTAMP IS NULL OR entry_date <= $8::TIMESTAMP )
-          AND ( $9::BOOLEAN IS NULL OR is_bot = $9 )
+          AND ( $9::BOOLEAN IS NULL OR is_bot = $9::BOOLEAN )
           AND ( $10::TEXT IS NULL OR POSITION($10 IN LOWER(message)) > 0 )
           AND ( $11::TEXT IS NULL OR POSITION($11 IN LOWER(author_name)) > 0 )
           AND ( $12::TEXT IS NULL OR POSITION($12 IN LOWER(actor_name)) > 0 )
           AND ( $13::TEXT IS NULL OR actor_id = $13 )
+          AND ( $14::BOOLEAN IS NULL OR is_command = $14::BOOLEAN )
           ORDER BY entry_date ${sort === 'ASC' ? 'ASC' : 'DESC'}
     `, [
       guild.id,
@@ -113,6 +116,7 @@ export class SearchCommand extends Command {
       authorname?.toLowerCase() ?? null,
       actorname?.toLowerCase() ?? null,
       actor?.id ?? actorId ?? null,
+      isCommand,
     ]);
 
     const attachment = new MessageAttachment(
