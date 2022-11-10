@@ -7,6 +7,7 @@ import { MessageLogger } from './src/message/MessageLogger';
 import { InvokeCommand } from './src/commands/invoke';
 import { LoLPickerCommand } from './src/commands/lolpicker';
 import { SearchCommand } from './src/commands/search';
+import { GlouGlouEpitechCommand } from './src/commands/glouGlouEpitech';
 
 const postgres = new Postgres(config.postgres as JSONObject);
 const client = new Client({ intents: [
@@ -27,6 +28,7 @@ client.once('ready', async () => {
 	commandManager.addCommand(new InvokeCommand());
 	commandManager.addCommand(new LoLPickerCommand());
 	commandManager.addCommand(new SearchCommand(postgres));
+	commandManager.addCommand(new GlouGlouEpitechCommand());
 	await commandManager.registerCommands();
 	console.log('Ready!');
 });
