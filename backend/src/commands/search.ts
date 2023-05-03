@@ -36,6 +36,7 @@ export class SearchCommand extends Command {
       .addStringOption( option => option.setName('channel_id').setRequired(false).setDescription('The channelId of channel in which the message has been created/updated/deleted') )
       .addChannelOption( option => option.setName('channel').setRequired(false).setDescription('The channel in which the message has been created/updated/deleted') )
       .addStringOption( option => option.setName('message').setRequired(false).setDescription('The content of the message to match') )
+      .addStringOption( option => option.setName('limit').setRequired(false).setDescription('The maximum number of returned value') )
       .addStringOption( option => option.setName('message_id').setRequired(false).setDescription('The messageId of the message') )
       .addBooleanOption( option => option.setName('is_bot').setRequired(false).setDescription('Whether the message has been authored by a bot') )
       .addBooleanOption( option => option.setName('is_command').setRequired(false).setDescription('Whether the message is a command') )
@@ -70,6 +71,8 @@ export class SearchCommand extends Command {
     const publish = interaction.options.getBoolean('publish', false);
     const sort = interaction.options.getString('sort', false);
     const isCommand = interaction.options.getBoolean('is_command', false);
+    const limit = parseInt(interaction.options.getString('limit', false) || '') || 50;
+
 
     if (! interaction.guild) {
       await interaction.reply({content: 'You can only search text in a guild', ephemeral: true});
@@ -84,6 +87,8 @@ export class SearchCommand extends Command {
 
     const _from = from ? new Date(from).toISOString() : null;
     const _to = to ? new Date(to).toISOString() : null;
+
+    const limitQuery = limit ? `LIMIT ${limit}` : '';
 
     const results = await this.postgres.query(`
       SELECT * FROM messages
@@ -102,6 +107,7 @@ export class SearchCommand extends Command {
           AND ( $13::TEXT IS NULL OR actor_id = $13 )
           AND ( $14::BOOLEAN IS NULL OR is_command = $14::BOOLEAN )
           ORDER BY entry_date ${sort === 'ASC' ? 'ASC' : 'DESC'}
+          ${limitQuery}
     `, [
       guild.id,
       author?.id ?? authorId ?? null,
@@ -119,13 +125,17 @@ export class SearchCommand extends Command {
       isCommand,
     ]);
 
-    const attachment = new MessageAttachment(
-      Buffer.from(getTable(results.rows), 'utf8'),
-      'search.txt',
-    );
-    await interaction.editReply({
-      files: [attachment],
-    });
+    try {
+      const attachment = new MessageAttachment(
+        Buffer.from(getTable(results.rows), 'utf8'),
+        'search.txt',
+      );
+      await interaction.editReply({
+        files: [attachment],
+      });
+    } catch {
+
+    }
   }
 
 }
